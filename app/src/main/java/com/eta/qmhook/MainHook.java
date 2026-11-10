@@ -14,6 +14,7 @@ public class MainHook implements IXposedHookLoadPackage {
 
     private static final String TAG = "QMHOOK";
     private static final String PKG = "com.kmxs.reader";
+    private static final String TOKEN_FILE = "/sdcard/Android/data/com.kmxs.reader/files/qm_token.txt";
     private static final String[] KEY_CANDIDATES = {
             "d3dGiJc651gSQ8w1",
             "242ccb8230d709e1",
@@ -49,6 +50,30 @@ public class MainHook implements IXposedHookLoadPackage {
         }
         String s = String.valueOf(o);
         return s.length() > n ? s.substring(0, n) + "..." : s;
+    }
+
+    private static synchronized void saveToken(String tk) {
+        try {
+            java.io.File f = new java.io.File(TOKEN_FILE);
+            java.io.File dir = f.getParentFile();
+            if (dir != null && !dir.exists()) dir.mkdirs();
+            if (f.exists()) {
+                java.io.BufferedReader br = new java.io.BufferedReader(new java.io.FileReader(f));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = br.readLine()) != null) sb.append(line);
+                br.close();
+                if (sb.toString().trim().equals(tk.trim())) {
+                    return;
+                }
+            }
+            java.io.FileWriter w = new java.io.FileWriter(f, false);
+            w.write(tk);
+            w.close();
+            log("TOKEN SAVED len=" + tk.length() + " -> " + TOKEN_FILE);
+        } catch (Throwable t) {
+            log("TOKEN SAVE FAIL " + t);
+        }
     }
 
     @Override
@@ -88,6 +113,12 @@ public class MainHook implements IXposedHookLoadPackage {
                                 if (md5(in + k).equals(out)) {
                                     log("SIGN KEY MATCH: [" + k + "]");
                                 }
+                            }
+                            if (in.startsWith("AUTHORIZATION=")) {
+                                String tk = in.substring("AUTHORIZATION=".length());
+                                int cut = tk.indexOf("app-version=");
+                                if (cut > 0) tk = tk.substring(0, cut);
+                                if (tk.length() > 100) saveToken(tk);
                             }
                         }
                     }
