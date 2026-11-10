@@ -36,14 +36,12 @@ public class MainHook implements IXposedHookLoadPackage {
         if (!PKG.equals(lpparam.packageName)) return;
         log("loaded pkg=" + lpparam.packageName);
 
+        hookAll(lpparam.classLoader, "com.qimao.qmsdk.tools.encryption.Encryption", "sign");
+        hookAll(lpparam.classLoader, "com.qimao.qmsdk.tools.encryption.Encryption", "encrypt");
         hookAll(lpparam.classLoader, "com.km.qimao.qmsdk.tools.encryption.Encryption", "sign");
-        hookAll(lpparam.classLoader, "com.km.qimao.qmsdk.tools.encryption.Encryption", "encrypt");
         hookAll(lpparam.classLoader, "com.km.encryption.api.Security", "decrypt");
         hookAll(lpparam.classLoader, "com.km.encryption.api.Security", "decryptV2");
-        hookAll(lpparam.classLoader, "com.km.encryption.api.Security", "encrypt");
-        hookAll(lpparam.classLoader, "com.km.encryption.api.Security", "encryptV2");
         hookAll(lpparam.classLoader, "com.km.encryption.aes.AESManager", "decrypt");
-        hookAll(lpparam.classLoader, "com.km.encryption.aes.AESManager", "encrypt");
     }
 
     private void hookAll(ClassLoader cl, String cls, String method) {
@@ -57,13 +55,13 @@ public class MainHook implements IXposedHookLoadPackage {
                     @Override
                     protected void beforeHookedMethod(MethodHookParam p) {
                         StringBuilder sb = new StringBuilder();
-                        for (Object a : p.args) sb.append(trunc(a, 200)).append(" , ");
+                        for (Object a : p.args) sb.append(trunc(a, 300)).append(" , ");
                         log("IN  " + shortCls + "." + m.getName() + "(" + sb + ")");
                     }
 
                     @Override
                     protected void afterHookedMethod(MethodHookParam p) {
-                        log("OUT " + m.getName() + " => " + trunc(p.getResult(), 300));
+                        log("OUT " + m.getName() + " => " + trunc(p.getResult(), 400));
                     }
                 });
                 n++;
