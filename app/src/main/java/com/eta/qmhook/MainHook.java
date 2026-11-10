@@ -2,6 +2,8 @@ package com.eta.qmhook;
 
 import android.util.Log;
 
+import java.security.MessageDigest;
+
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
@@ -12,10 +14,28 @@ public class MainHook implements IXposedHookLoadPackage {
 
     private static final String TAG = "QMHOOK";
     private static final String PKG = "com.kmxs.reader";
+    private static final String[] KEY_CANDIDATES = {
+            "d3dGiJc651gSQ8w1",
+            "242ccb8230d709e1",
+            "8w1",
+            ""
+    };
 
     private static void log(String s) {
         Log.i(TAG, s);
         XposedBridge.log(TAG + " " + s);
+    }
+
+    private static String md5(String s) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] b = md.digest(s.getBytes("UTF-8"));
+            StringBuilder sb = new StringBuilder();
+            for (byte x : b) sb.append(String.format("%02x", x));
+            return sb.toString();
+        } catch (Throwable t) {
+            return "ERR";
+        }
     }
 
     private static String trunc(Object o, int n) {
@@ -37,8 +57,6 @@ public class MainHook implements IXposedHookLoadPackage {
         log("loaded pkg=" + lpparam.packageName);
 
         hookAll(lpparam.classLoader, "com.qimao.qmsdk.tools.encryption.Encryption", "sign");
-        hookAll(lpparam.classLoader, "com.qimao.qmsdk.tools.encryption.Encryption", "encrypt");
-        hookAll(lpparam.classLoader, "com.km.qimao.qmsdk.tools.encryption.Encryption", "sign");
         hookAll(lpparam.classLoader, "com.km.encryption.api.Security", "decrypt");
         hookAll(lpparam.classLoader, "com.km.encryption.api.Security", "decryptV2");
         hookAll(lpparam.classLoader, "com.km.encryption.aes.AESManager", "decrypt");
@@ -55,13 +73,23 @@ public class MainHook implements IXposedHookLoadPackage {
                     @Override
                     protected void beforeHookedMethod(MethodHookParam p) {
                         StringBuilder sb = new StringBuilder();
-                        for (Object a : p.args) sb.append(trunc(a, 300)).append(" , ");
+                        for (Object a : p.args) sb.append(trunc(a, 2000)).append(" , ");
                         log("IN  " + shortCls + "." + m.getName() + "(" + sb + ")");
                     }
 
                     @Override
                     protected void afterHookedMethod(MethodHookParam p) {
-                        log("OUT " + m.getName() + " => " + trunc(p.getResult(), 400));
+                        Object res = p.getResult();
+                        log("OUT " + m.getName() + " => " + trunc(res, 2000));
+                        if ("sign".equals(m.getName()) && res != null && p.args.length > 0) {
+                            String in = String.valueOf(p.args[0]);
+                            String out = String.valueOf(res);
+                            for (String k : KEY_CANDIDATES) {
+                                if (md5(in + k).equals(out)) {
+                                    log("SIGN KEY MATCH: [" + k + "]");
+                                }
+                            }
+                        }
                     }
                 });
                 n++;
