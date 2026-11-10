@@ -73,7 +73,7 @@ public class MainHook implements IXposedHookLoadPackage {
                     @Override
                     protected void beforeHookedMethod(MethodHookParam p) {
                         StringBuilder sb = new StringBuilder();
-                        for (Object a : p.args) sb.append(trunc(a, 4000)).append(" , ");
+                        for (Object a : p.args) { String v = String.valueOf(a); sb.append("LEN=").append(v.length()).append(" HEAD=").append(trunc(v, 900)).append(" TAIL=").append(v.length() > 900 ? v.substring(v.length() - 900) : "").append(" , "); }
                         log("IN  " + shortCls + "." + m.getName() + "(" + sb + ")");
                     }
 
